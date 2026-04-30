@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BUYNOW — Track Order</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<style>
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+.track-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+  background: rgba(10,10,15,0.92); backdrop-filter: blur(20px);
+  position: sticky; top: 0; z-index: 50;
+}
+.track-nav .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:1.4rem;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+
+/* SEARCH BAR */
+.track-search-wrap {
+  max-width: 700px; margin: 3rem auto 0; padding: 0 1.5rem; text-align: center;
+}
+.track-search-wrap h1 {
+  font-family: 'Syne', sans-serif; font-size: 2.5rem; font-weight: 800;
+  margin-bottom: 0.5rem; letter-spacing: -1px;
+}
+.track-search-wrap p { color: var(--muted); margin-bottom: 2rem; }
+.search-box {
+  display: flex; gap: 0.75rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 0.6rem 0.6rem 0.6rem 1.2rem;
+}
+.search-box input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-size: 1rem; font-family: 'DM Sans', sans-serif;
+}
+.search-box button {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; color: #fff; border-radius: 10px;
+  padding: 0.65rem 1.5rem; font-family: 'Syne', sans-serif;
+  font-weight: 700; cursor: pointer; font-size: 0.9rem;
+  transition: opacity 0.2s;
+}
+.search-box button:hover { opacity: 0.88; }
+
+/* MAIN CONTENT */
+.track-content {
+  max-width: 900px; margin: 2.5rem auto 4rem; padding: 0 1.5rem;
+}
+
+/* ORDER HEADER */
+.order-header-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 2rem;
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 1.5rem; margin-bottom: 1.5rem;
+  animation: fadeUp 0.4s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)} }
+.order-id-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.order-id-val { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; margin: 0.25rem 0; }
+.order-tracking-id { font-size: 0.9rem; color: var(--accent2); font-weight: 600; }
+.order-status-big {
+  text-align: center; padding: 1rem 1.5rem;
+  background: var(--card); border-radius: 14px; border: 1px solid var(--border);
+}
+.status-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.status-val { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; margin-top: 0.3rem; }
+.status-val.confirmed { color: #60a5fa; }
+.status-val.packed    { color: var(--gold); }
+.status-val.shipped   { color: var(--accent2); }
+.status-val.out_for_delivery { color: var(--warning); }
+.status-val.delivered { color: var(--success); }
+.status-val.cancelled { color: var(--accent); }
+
+/* PROGRESS STEPPER */
+.progress-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 2rem; margin-bottom: 1.5rem;
+  animation: fadeUp 0.45s ease 0.1s both;
+}
+.progress-card h3 { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 2rem; }
+
+.stepper {
+  display: flex; justify-content: space-between;
+  position: relative; margin: 0 1rem;
+}
+.stepper::before {
+  content: ''; position: absolute; top: 22px; left: 0; right: 0;
+  height: 3px; background: var(--border); z-index: 0;
+}
+.stepper-fill {
+  position: absolute; top: 22px; left: 0;
+  height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2));
+  z-index: 1; transition: width 1s ease;
+}
+.step {
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  z-index: 2; flex: 1;
+}
+.step-dot {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--card); border: 3px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; transition: all 0.4s; position: relative;
+}
+.step.done .step-dot {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: var(--accent); box-shadow: 0 0 20px rgba(255,60,110,0.4);
+}
+.step.current .step-dot {
+  background: var(--accent2); border-color: var(--accent2);
+  box-shadow: 0 0 0 6px rgba(124,58,237,0.2);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 6px rgba(124,58,237,0.2)} 50%{box-shadow:0 0 0 12px rgba(124,58,237,0.1)} }
+.step-label { font-size: 0.7rem; color: var(--muted); text-align: center; font-weight: 600; }
+.step.done .step-label, .step.current .step-label { color: var(--text); }
+
+/* TWO COL LAYOUT */
+.track-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media(max-width:680px) { .track-two-col { grid-template-columns: 1fr; } }
+
+/* TIMELINE */
+.timeline-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 1.75rem;
+  animation: fadeUp 0.5s ease 0.2s both;
+}
+.timeline-card h3 { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 1.5rem; }
+.tl { position: relative; padding-left: 1.5rem; }
+.tl::before { content:''; position:absolute; left:7px; top:0; bottom:0; width:2px; background:var(--border); }
+.tl-item { position: relative; margin-bottom: 1.5rem; }
+.tl-item:last-child { margin-bottom: 0; }
+.tl-dot {
+  position: absolute; left: -1.5rem; top: 4px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); border: 3px solid var(--bg);
+  box-shadow: 0 0 8px rgba(255,60,110,0.5);
+}
+.tl-item:not(:first-child) .tl-dot { background: var(--border); box-shadow: none; }
+.tl-status { font-weight: 700; font-size: 0.9rem; }
+.tl-desc { color: var(--muted); font-size: 0.8rem; margin: 0.2rem 0; }
+.tl-time { font-size: 0.72rem; color: var(--accent2); }
+
+/* ORDER ITEMS */
+.items-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 1.75rem;
+  animation: fadeUp 0.5s ease 0.25s both;
+}
+.items-card h3 { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 1.25rem; }
+.item-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.75rem 0; border-bottom: 1px solid var(--border);
+}
+.item-row:last-child { border-bottom: none; }
+.item-emoji { font-size: 1.75rem; width: 42px; text-align: center; }
+.item-details { flex: 1; }
+.item-name { font-weight: 600; font-size: 0.9rem; }
+.item-qty { font-size: 0.75rem; color: var(--muted); }
+.item-price { font-family: 'Syne', sans-serif; font-weight: 700; color: var(--accent); }
+.total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);
+}
+.total-row span { color: var(--muted); font-size: 0.9rem; }
+.total-row b { font-family: 'Syne', sans-serif; font-size: 1.3rem; color: var(--accent); }
+
+/* CUSTOMER CARD */
+.cust-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 1.75rem; margin-top: 1.5rem;
+  animation: fadeUp 0.5s ease 0.3s both;
+}
+.cust-card h3 { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 1.25rem; }
+.cust-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.cust-field span { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; }
+.cust-field b { font-size: 0.9rem; }
+
+/* PAY STATUS */
+.pay-status-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 1.75rem; margin-top: 1.5rem;
+  animation: fadeUp 0.5s ease 0.35s both;
+}
+.pay-status-card h3 { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 1.25rem; }
+.pay-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; }
+.pay-row span { color: var(--muted); font-size: 0.875rem; }
+.pay-badge-big {
+  padding: 0.35rem 1rem; border-radius: 100px; font-weight: 700; font-size: 0.85rem;
+}
+.pay-badge-big.paid { background: rgba(16,185,129,0.15); color: var(--success); }
+.pay-badge-big.unpaid { background: rgba(255,60,110,0.15); color: var(--accent); }
+.pay-badge-big.refunded { background: rgba(245,158,11,0.15); color: var(--gold); }
+
+/* ERROR STATE */
+.error-state {
+  text-align: center; padding: 5rem 2rem;
+  animation: fadeUp 0.4s ease;
+}
+.error-state .icon { font-size: 4rem; margin-bottom: 1rem; }
+.error-state h2 { font-family:'Syne',sans-serif; font-weight:800; font-size:1.8rem; margin-bottom:0.5rem; }
+.error-state p { color: var(--muted); }
+.back-btn {
+  display: inline-block; margin-top: 1.5rem;
+  background: var(--accent); color: #fff; text-decoration: none;
+  border-radius: 12px; padding: 0.7rem 1.8rem;
+  font-family: 'Syne', sans-serif; font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<nav class="track-nav">
+  <div class="logo">BUYNOW</div>
+  <a href="/" style="color:var(--muted);text-decoration:none;font-size:0.85rem">← Back to Store</a>
+</nav>
+
+<!-- SEARCH -->
+<div class="track-search-wrap">
+  <h1>📍 Track Order</h1>
+  <p>Enter your tracking ID to see live delivery status</p>
+  <div class="search-box">
+    <input type="text" id="trackInput" placeholder="e.g. BNXYZ1234567" value="{{ tracking_id or '' }}"
+      onkeydown="if(event.key==='Enter')doTrack()">
+    <button onclick="doTrack()">Track Now</button>
+  </div>
+</div>
+
+<div class="track-content">
+  {% if error %}
+  <div class="error-state">
+    <div class="icon">🔍</div>
+    <h2>Order Not Found</h2>
+    <p>No order found with tracking ID <b>{{ tracking_id }}</b><br>Please check and try again.</p>
+    <a href="/" class="back-btn">Go to Store</a>
+  </div>
+
+  {% elif order %}
+  <!-- ORDER HEADER -->
+  <div class="order-header-card">
+    <div>
+      <div class="order-id-label">Order</div>
+      <div class="order-id-val">#{{ order.id }}</div>
+      <div class="order-tracking-id">🔖 {{ order.tracking_id }}</div>
+      {% if order.courier_name %}
+      <div style="margin-top:0.5rem;font-size:0.85rem;color:var(--muted)">🚚 {{ order.courier_name }}</div>
+      {% endif %}
+    </div>
+    <div class="order-status-big">
+      <div class="status-label">Current Status</div>
+      <div class="status-val {{ order.status }}">
+        {% if order.status == 'confirmed' %}📋 Confirmed
+        {% elif order.status == 'packed' %}📦 Packed
+        {% elif order.status == 'shipped' %}🚚 Shipped
+        {% elif order.status == 'out_for_delivery' %}🛵 Out for Delivery
+        {% elif order.status == 'delivered' %}✅ Delivered
+        {% elif order.status == 'cancelled' %}❌ Cancelled
+        {% else %}{{ order.status }}{% endif %}
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem">
+        {{ order.created_at[:10] if order.created_at else "" }}
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS STEPPER -->
+  <div class="progress-card">
+    <h3>📦 Delivery Progress</h3>
+    {% set steps = ['confirmed','packed','shipped','out_for_delivery','delivered'] %}
+    {% set step_icons = ['📋','📦','🚚','🛵','✅'] %}
+    {% set step_labels = ['Confirmed','Packed','Shipped','Out for Delivery','Delivered'] %}
+    {% set cur = order.status %}
+    {% set cur_idx = steps.index(cur) if cur in steps else 0 %}
+    {% set fill_pct = (cur_idx / (steps|length - 1) * 100) | round %}
+
+    <div class="stepper">
+      <div class="stepper-fill" style="width:{{ fill_pct }}%"></div>
+      {% for i in range(steps|length) %}
+      <div class="step {% if i < cur_idx %}done{% elif i == cur_idx %}current{% endif %}">
+        <div class="step-dot">{{ step_icons[i] }}</div>
+        <div class="step-label">{{ step_labels[i] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- TWO COL -->
+  <div class="track-two-col">
+    <!-- TIMELINE -->
+    <div class="timeline-card">
+      <h3>🗂 Activity Timeline</h3>
+      <div class="tl">
+        {% for e in events|reverse %}
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-status">{{ e.status }}</div>
+          <div class="tl-desc">{{ e.description }}</div>
+          <div class="tl-time">📍 {{ e.location }} · {{ e.timestamp[:16].replace('T',' ') }}</div>
+        </div>
+        {% else %}
+        <p style="color:var(--muted)">No events recorded yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div class="items-card">
+      <h3>🛍 Order Items</h3>
+      {% for item in items %}
+      <div class="item-row">
+        <div class="item-emoji">{{ item.image_url }}</div>
+        <div class="item-details">
+          <div class="item-name">{{ item.product_name }}</div>
+          <div class="item-qty">Qty: {{ item.quantity }}</div>
+        </div>
+        <div class="item-price">₹{{ "{:,.0f}".format(item.price * item.quantity) }}</div>
+      </div>
+      {% endfor %}
+      <div class="total-row">
+        <span>Order Total</span>
+        <b>₹{{ "{:,.0f}".format(order.total_amount) }}</b>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER + PAYMENT -->
+  <div class="track-two-col">
+    <div class="cust-card">
+      <h3>👤 Delivery Address</h3>
+      <div class="cust-grid">
+        <div class="cust-field"><span>Name</span><b>{{ order.customer_name }}</b></div>
+        <div class="cust-field"><span>Phone</span><b>{{ order.phone }}</b></div>
+        <div class="cust-field" style="grid-column:1/-1"><span>Address</span><b>{{ order.address }}, {{ order.city }}</b></div>
+      </div>
+    </div>
+
+    <div class="pay-status-card">
+      <h3>💳 Payment Info</h3>
+      <div class="pay-row">
+        <span>Method</span>
+        <b>{{ order.payment_method | upper if order.payment_method else "COD" }}</b>
+      </div>
+      <div class="pay-row">
+        <span>Amount</span>
+        <b style="color:var(--accent)">₹{{ "{:,.0f}".format(order.total_amount) }}</b>
+      </div>
+      <div class="pay-row">
+        <span>Status</span>
+        <span class="pay-badge-big {{ order.payment_status }}">{{ order.payment_status | upper }}</span>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- DEFAULT: No tracking ID in URL -->
+  <div class="error-state">
+    <div class="icon">📦</div>
+    <h2>Track Your Package</h2>
+    <p>Enter your Tracking ID above to see live status updates.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function doTrack() {
+  const id = document.getElementById("trackInput").value.trim();
+  if (!id) return;
+  window.location.href = `/tracking/${id}`;
+}
+
+// Auto-refresh every 30 seconds if order is active
+{% if order and order.status not in ['delivered','cancelled'] %}
+setInterval(async () => {
+  const res = await fetch(`/api/tracking/{{ order.tracking_id }}`);
+  const data = await res.json();
+  if (data.order && data.order.status !== "{{ order.status }}") {
+    location.reload();
+  }
+}, 30000);
+{% endif %}
+</script>
+</body>
+</html>

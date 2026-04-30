@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BUYNOW — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="dashboard-body">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">BUYNOW</div>
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item active" onclick="showSection('overview', this)">📊 Overview</a>
+    <a href="#" class="nav-item" onclick="showSection('orders', this)">📦 Orders</a>
+    <a href="#" class="nav-item" onclick="showSection('products', this)">🛍 Products</a>
+    <a href="#" class="nav-item" onclick="showSection('courier', this)">🚚 Courier</a>
+    <a href="#" class="nav-item" onclick="showSection('payments', this)">💳 Payments</a>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="/" class="nav-item">🏪 View Store</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="dash-main">
+
+  <!-- TOP BAR -->
+  <header class="dash-header">
+    <div>
+      <h1 class="dash-title" id="pageTitle">Overview</h1>
+      <p class="dash-sub" id="pageSub">Real-time business snapshot</p>
+    </div>
+    <div class="header-right">
+      <div class="live-dot"></div>
+      <span style="color:var(--muted);font-size:0.8rem">Live</span>
+      <div class="dash-time" id="liveTime"></div>
+    </div>
+  </header>
+
+  <!-- ── OVERVIEW SECTION ── -->
+  <section class="section" id="sec-overview">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(255,60,110,0.15)">📦</div>
+        <div class="stat-info">
+          <div class="stat-val" id="s-total">{{ stats.total_orders }}</div>
+          <div class="stat-label">Total Orders</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,0.15)">⏳</div>
+        <div class="stat-info">
+          <div class="stat-val" id="s-pending">{{ stats.pending_orders }}</div>
+          <div class="stat-label">Pending</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(124,58,237,0.15)">🚚</div>
+        <div class="stat-info">
+          <div class="stat-val" id="s-shipped">{{ stats.shipped_orders }}</div>
+          <div class="stat-label">Shipped</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,0.15)">✅</div>
+        <div class="stat-info">
+          <div class="stat-val" id="s-delivered">{{ stats.delivered_orders }}</div>
+          <div class="stat-label">Delivered</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,0.15)">💰</div>
+        <div class="stat-info">
+          <div class="stat-val" id="s-revenue">₹{{ "{:,.0f}".format(stats.total_revenue) }}</div>
+          <div class="stat-label">Revenue</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(255,60,110,0.15)">⚠️</div>
+        <div class="stat-info">
+          <div class="stat-val" id="s-lowstock">{{ stats.low_stock }}</div>
+          <div class="stat-label">Low Stock</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(124,58,237,0.15)">👥</div>
+        <div class="stat-info">
+          <div class="stat-val">{{ stats.total_customers }}</div>
+          <div class="stat-label">Customers</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,0.15)">🛍</div>
+        <div class="stat-info">
+          <div class="stat-val">{{ stats.total_products }}</div>
+          <div class="stat-label">Products</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- Recent Orders -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Recent Orders</h3>
+          <button class="pill-btn" onclick="showSection('orders', document.querySelector('[onclick*=\"orders\"]'))">View All</button>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>ID</th><th>Customer</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for o in recent_orders %}
+            <tr>
+              <td><span class="order-id">#{{ o.id }}</span></td>
+              <td>{{ o.customer_name }}<br><span style="color:var(--muted);font-size:0.75rem">{{ o.city }}</span></td>
+              <td>₹{{ "{:,.0f}".format(o.total_amount) }}</td>
+              <td><span class="status-badge status-{{ o.status }}">{{ o.status }}</span></td>
+              <td><button class="action-btn" onclick="openOrderModal({{ o.id }})">View</button></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Low Stock Alert -->
+      <div class="panel">
+        <div class="panel-header"><h3>⚠️ Low Stock Alert</h3></div>
+        <div class="stock-list">
+          {% for p in products %}
+          {% if p.stock < 10 %}
+          <div class="stock-item">
+            <span class="s-emoji">{{ p.image_url }}</span>
+            <div class="s-info">
+              <div class="s-name">{{ p.name }}</div>
+              <div class="stock-bar-wrap">
+                <div class="stock-bar" style="width:{{ [p.stock * 10, 100] | min }}%"></div>
+              </div>
+            </div>
+            <span class="s-count {% if p.stock == 0 %}danger{% elif p.stock < 5 %}warn{% endif %}">{{ p.stock }}</span>
+          </div>
+          {% endif %}
+          {% endfor %}
+          {% if stats.low_stock == 0 %}
+          <div style="text-align:center;padding:2rem;color:var(--muted)">✅ All products well stocked</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ORDERS SECTION ── -->
+  <section class="section hidden" id="sec-orders">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>All Orders</h3>
+        <div style="display:flex;gap:0.5rem">
+          <select class="filter-select" id="orderStatusFilter" onchange="loadOrders()">
+            <option value="">All Status</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="packed">Packed</option>
+            <option value="shipped">Shipped</option>
+            <option value="out_for_delivery">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button class="pill-btn" onclick="loadOrders()">🔄 Refresh</button>
+        </div>
+      </div>
+      <table class="data-table" id="ordersTable">
+        <thead>
+          <tr><th>ID</th><th>Customer</th><th>City</th><th>Amount</th><th>Payment</th><th>Status</th><th>Courier</th><th>Tracking</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="ordersTbody">
+          <tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── PRODUCTS SECTION ── -->
+  <section class="section hidden" id="sec-products">
+    <div class="panel-header" style="margin-bottom:1rem">
+      <h3 style="font-family:'Syne',sans-serif">Products</h3>
+      <button class="pill-btn accent" onclick="openAddProduct()">+ Add Product</button>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Emoji</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for p in products %}
+        <tr id="prod-row-{{ p.id }}">
+          <td style="font-size:1.5rem">{{ p.image_url }}</td>
+          <td><b>{{ p.name }}</b><br><span style="color:var(--muted);font-size:0.75rem">{{ p.description[:40] }}</span></td>
+          <td><span class="pill-badge">{{ p.category }}</span></td>
+          <td>₹{{ "{:,.0f}".format(p.price) }}</td>
+          <td>
+            <span class="stock-tag {% if p.stock == 0 %}danger{% elif p.stock < 10 %}warn{% else %}ok{% endif %}">
+              {{ p.stock }}
+            </span>
+          </td>
+          <td>
+            <button class="action-btn" onclick="openEditProduct({{ p.id }}, '{{ p.name }}', {{ p.price }}, {{ p.stock }}, '{{ p.category }}', '{{ p.description }}')">✏️ Edit</button>
+            <button class="action-btn danger" onclick="deleteProduct({{ p.id }})">🗑 Delete</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── COURIER SECTION ── -->
+  <section class="section hidden" id="sec-courier">
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-header"><h3>🚚 Courier Services</h3></div>
+        <div class="courier-list">
+          {% for c in couriers %}
+          <div class="courier-card">
+            <div class="courier-icon">🚚</div>
+            <div class="courier-info">
+              <div class="courier-name">{{ c.name }}</div>
+              <div class="courier-contact">📞 {{ c.contact }}</div>
+              <div class="courier-api">API: <code>{{ c.api_key }}</code></div>
+            </div>
+            <span class="live-dot"></span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h3>📤 Assign Courier to Order</h3></div>
+        <div class="form-group">
+          <label>Order ID</label>
+          <input type="number" id="assignOrderId" class="dash-input" placeholder="Enter order ID">
+        </div>
+        <div class="form-group">
+          <label>Select Courier</label>
+          <select id="assignCourier" class="dash-input">
+            {% for c in couriers %}
+            <option value="{{ c.name }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pickup Location</label>
+          <input type="text" id="assignLocation" class="dash-input" placeholder="e.g. Chennai Warehouse">
+        </div>
+        <button class="big-btn" onclick="assignCourier()">🚀 Assign & Ship</button>
+
+        <div class="panel-header" style="margin-top:1.5rem"><h3>📍 Simulate Delivery Update</h3></div>
+        <div class="form-group">
+          <label>Order ID</label>
+          <input type="number" id="simOrderId" class="dash-input" placeholder="Order ID">
+        </div>
+        <div class="form-group">
+          <label>New Status</label>
+          <select id="simStatus" class="dash-input">
+            <option value="packed">Packed</option>
+            <option value="shipped">Shipped</option>
+            <option value="out_for_delivery">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Current Location</label>
+          <input type="text" id="simLocation" class="dash-input" placeholder="e.g. Mumbai Hub">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="simDesc" class="dash-input" placeholder="Status description">
+        </div>
+        <button class="big-btn accent2" onclick="simulateUpdate()">📡 Push Update</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PAYMENTS SECTION ── -->
+  <section class="section hidden" id="sec-payments">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>💳 Payment Management</h3>
+        <button class="pill-btn" onclick="loadPayments()">🔄 Refresh</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Order ID</th><th>Customer</th><th>Amount</th><th>Method</th><th>Payment Status</th><th>Order Status</th><th>Action</th></tr>
+        </thead>
+        <tbody id="paymentsTbody">
+          <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal large-modal">
+    <div class="modal-header">
+      <h2 id="modalOrderTitle">Order Details</h2>
+      <button class="close-btn" onclick="closeOrderModal()">✕</button>
+    </div>
+    <div id="modalOrderContent" class="modal-body">Loading...</div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="productModalTitle">Add Product</h2>
+      <button class="close-btn" onclick="document.getElementById('productModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Product Name</label>
+      <input type="text" id="pm-name" class="dash-input" placeholder="Product name">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <input type="text" id="pm-desc" class="dash-input" placeholder="Short description">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="form-group">
+        <label>Price (₹)</label>
+        <input type="number" id="pm-price" class="dash-input" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>Stock</label>
+        <input type="number" id="pm-stock" class="dash-input" placeholder="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <input type="text" id="pm-cat" class="dash-input" placeholder="Electronics, Clothing...">
+    </div>
+    <input type="hidden" id="pm-id">
+    <div class="modal-footer">
+      <button class="cancel-btn" onclick="document.getElementById('productModal').classList.remove('open')">Cancel</button>
+      <button class="place-btn" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Live Clock ──
+function updateClock() {
+  const now = new Date();
+  document.getElementById("liveTime").textContent = now.toLocaleTimeString("en-IN");
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── Section Switcher ──
+function showSection(name, el) {
+  document.querySelectorAll(".section").forEach(s => s.classList.add("hidden"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  document.getElementById("sec-" + name).classList.remove("hidden");
+  if (el) el.classList.add("active");
+
+  const titles = { overview:"Overview", orders:"Orders", products:"Products", courier:"Courier", payments:"Payments" };
+  const subs = { overview:"Real-time business snapshot", orders:"Manage all customer orders", products:"Inventory management", courier:"Courier assignment & tracking", payments:"Payment status & collection" };
+  document.getElementById("pageTitle").textContent = titles[name] || name;
+  document.getElementById("pageSub").textContent = subs[name] || "";
+
+  if (name === "orders") loadOrders();
+  if (name === "payments") loadPayments();
+}
+
+// ── Orders ──
+async function loadOrders() {
+  const status = document.getElementById("orderStatusFilter")?.value || "";
+  const res = await fetch(`/api/orders?status=${status}`);
+  const orders = await res.json();
+  const tbody = document.getElementById("ordersTbody");
+  if (!orders.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">No orders found</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = orders.map(o => `
+    <tr>
+      <td><span class="order-id">#${o.id}</span></td>
+      <td>${o.customer_name}<br><small style="color:var(--muted)">${o.phone || ""}</small></td>
+      <td>${o.city}</td>
+      <td style="font-weight:700">₹${Number(o.total_amount).toLocaleString("en-IN")}</td>
+      <td><span class="pay-badge ${o.payment_status}">${o.payment_status}</span></td>
+      <td><span class="status-badge status-${o.status}">${o.status}</span></td>
+      <td>${o.courier_name || "<span style='color:var(--muted)'>—</span>"}</td>
+      <td><code style="font-size:0.7rem;color:var(--accent)">${o.tracking_id || "—"}</code></td>
+      <td>
+        <button class="action-btn" onclick="openOrderModal(${o.id})">📋 View</button>
+        <button class="action-btn accent2" onclick="quickStatus(${o.id})">⚡ Update</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+// ── Order Modal ──
+async function openOrderModal(id) {
+  document.getElementById("orderModal").classList.add("open");
+  document.getElementById("modalOrderContent").innerHTML = `<div style="text-align:center;padding:3rem;color:var(--muted)">Loading...</div>`;
+  const res = await fetch(`/api/order/${id}`);
+  const data = await res.json();
+  const o = data.order;
+
+  const statusOptions = ["confirmed","packed","shipped","out_for_delivery","delivered","cancelled"]
+    .map(s => `<option value="${s}" ${o.status===s?"selected":""}>${s.replace(/_/g," ").toUpperCase()}</option>`).join("");
+
+  const events = data.events.map(e => `
+    <div class="timeline-item">
+      <div class="tl-dot"></div>
+      <div class="tl-content">
+        <div class="tl-status">${e.status}</div>
+        <div class="tl-desc">${e.description}</div>
+        <div class="tl-loc">📍 ${e.location} · ${new Date(e.timestamp).toLocaleString("en-IN")}</div>
+      </div>
+    </div>
+  `).join("");
+
+  const items = data.items.map(i => `
+    <div class="order-item-row">
+      <span>${i.image_url} ${i.name}</span>
+      <span>×${i.quantity}</span>
+      <span>₹${(i.price * i.quantity).toLocaleString("en-IN")}</span>
+    </div>
+  `).join("");
+
+  document.getElementById("modalOrderTitle").textContent = `Order #${o.id} — ${o.customer_name}`;
+  document.getElementById("modalOrderContent").innerHTML = `
+    <div class="modal-grid">
+      <div>
+        <h4 class="modal-section-title">📦 Items</h4>
+        ${items}
+        <div class="order-total-row">Total: <b>₹${Number(o.total_amount).toLocaleString("en-IN")}</b></div>
+
+        <h4 class="modal-section-title" style="margin-top:1.5rem">👤 Customer</h4>
+        <div class="info-grid">
+          <div><span>Name</span><b>${o.customer_name}</b></div>
+          <div><span>Email</span><b>${o.email}</b></div>
+          <div><span>Phone</span><b>${o.phone}</b></div>
+          <div><span>City</span><b>${o.city}</b></div>
+          <div style="grid-column:1/-1"><span>Address</span><b>${o.address}, ${o.pincode}</b></div>
+        </div>
+
+        <h4 class="modal-section-title" style="margin-top:1.5rem">⚙️ Update Order</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+          <div>
+            <label class="dash-label">Status</label>
+            <select id="mu-status" class="dash-input">${statusOptions}</select>
+          </div>
+          <div>
+            <label class="dash-label">Payment</label>
+            <select id="mu-payment" class="dash-input">
+              <option value="unpaid" ${o.payment_status==="unpaid"?"selected":""}>Unpaid</option>
+              <option value="paid" ${o.payment_status==="paid"?"selected":""}>Paid</option>
+              <option value="refunded" ${o.payment_status==="refunded"?"selected":""}>Refunded</option>
+            </select>
+          </div>
+          <div>
+            <label class="dash-label">Location</label>
+            <input type="text" id="mu-location" class="dash-input" placeholder="Current location" value="${o.city}">
+          </div>
+          <div>
+            <label class="dash-label">Courier</label>
+            <input type="text" id="mu-courier" class="dash-input" placeholder="Courier name" value="${o.courier_name || ""}">
+          </div>
+        </div>
+        <div style="margin-bottom:0.75rem">
+          <label class="dash-label">Description</label>
+          <input type="text" id="mu-desc" class="dash-input" placeholder="Status note...">
+        </div>
+        <button class="big-btn" onclick="updateOrder(${o.id})">💾 Save Changes</button>
+      </div>
+
+      <div>
+        <h4 class="modal-section-title">📍 Tracking Timeline</h4>
+        <div class="timeline">${events || "<p style='color:var(--muted)'>No events yet</p>"}</div>
+        <div style="margin-top:1rem">
+          <label class="dash-label">Tracking ID</label>
+          <div class="tracking-id-box">${o.tracking_id}</div>
+          <a href="/tracking/${o.tracking_id}" target="_blank" class="track-ext-link">Open tracking page ↗</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function closeOrderModal() {
+  document.getElementById("orderModal").classList.remove("open");
+}
+
+async function updateOrder(id) {
+  const body = {
+    status: document.getElementById("mu-status").value,
+    payment_status: document.getElementById("mu-payment").value,
+    location: document.getElementById("mu-location").value,
+    courier_name: document.getElementById("mu-courier").value,
+    description: document.getElementById("mu-desc").value,
+  };
+  const res = await fetch(`/api/order/${id}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (data.success) {
+    showToast("Order updated successfully ✓");
+    openOrderModal(id);
+    if (document.getElementById("sec-orders").classList.contains("active")) loadOrders();
+  } else {
+    showToast(data.error, "error");
+  }
+}
+
+async function quickStatus(id) {
+  const s = prompt("Enter new status:\nconfirmed / packed / shipped / out_for_delivery / delivered / cancelled");
+  if (!s) return;
+  const res = await fetch(`/api/order/${id}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ status: s, location: "Warehouse" }) });
+  const data = await res.json();
+  if (data.success) { showToast("Status updated ✓"); loadOrders(); }
+  else showToast(data.error, "error");
+}
+
+// ── Courier ──
+async function assignCourier() {
+  const orderId = document.getElementById("assignOrderId").value;
+  const courier = document.getElementById("assignCourier").value;
+  const location = document.getElementById("assignLocation").value || "Warehouse";
+  if (!orderId) { showToast("Enter Order ID!", "error"); return; }
+  const res = await fetch(`/api/order/${orderId}/update`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ status:"shipped", courier_name: courier, location, description: `Handed over to ${courier}. Package picked up from ${location}.` })
+  });
+  const data = await res.json();
+  if (data.success) showToast(`Order #${orderId} assigned to ${courier} ✓`);
+  else showToast(data.error || "Failed", "error");
+}
+
+async function simulateUpdate() {
+  const orderId = document.getElementById("simOrderId").value;
+  const status = document.getElementById("simStatus").value;
+  const location = document.getElementById("simLocation").value || "Hub";
+  const desc = document.getElementById("simDesc").value;
+  if (!orderId) { showToast("Enter Order ID!", "error"); return; }
+  const res = await fetch(`/api/order/${orderId}/update`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ status, location, description: desc })
+  });
+  const data = await res.json();
+  if (data.success) showToast(`Update pushed for Order #${orderId} ✓`);
+  else showToast(data.error || "Failed", "error");
+}
+
+// ── Payments ──
+async function loadPayments() {
+  const res = await fetch("/api/orders");
+  const orders = await res.json();
+  document.getElementById("paymentsTbody").innerHTML = orders.map(o => `
+    <tr>
+      <td><span class="order-id">#${o.id}</span></td>
+      <td>${o.customer_name}</td>
+      <td><b>₹${Number(o.total_amount).toLocaleString("en-IN")}</b></td>
+      <td><span class="pill-badge">${o.payment_method || "COD"}</span></td>
+      <td><span class="pay-badge ${o.payment_status}">${o.payment_status}</span></td>
+      <td><span class="status-badge status-${o.status}">${o.status}</span></td>
+      <td>
+        ${o.payment_status !== "paid" ? `<button class="action-btn ok" onclick="markPaid(${o.id})">✅ Mark Paid</button>` : ""}
+        ${o.payment_status === "paid" ? `<button class="action-btn danger" onclick="markRefund(${o.id})">↩ Refund</button>` : ""}
+      </td>
+    </tr>
+  `).join("");
+}
+
+async function markPaid(id) {
+  const res = await fetch(`/api/payment/${id}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ payment_status:"paid" }) });
+  const data = await res.json();
+  if (data.success) { showToast("Payment marked as PAID ✓"); loadPayments(); }
+}
+
+async function markRefund(id) {
+  const res = await fetch(`/api/payment/${id}/update`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ payment_status:"refunded" }) });
+  const data = await res.json();
+  if (data.success) { showToast("Marked as Refunded"); loadPayments(); }
+}
+
+// ── Products ──
+function openAddProduct() {
+  document.getElementById("pm-id").value = "";
+  document.getElementById("pm-name").value = "";
+  document.getElementById("pm-desc").value = "";
+  document.getElementById("pm-price").value = "";
+  document.getElementById("pm-stock").value = "";
+  document.getElementById("pm-cat").value = "";
+  document.getElementById("productModalTitle").textContent = "Add Product";
+  document.getElementById("productModal").classList.add("open");
+}
+
+function openEditProduct(id, name, price, stock, cat, desc) {
+  document.getElementById("pm-id").value = id;
+  document.getElementById("pm-name").value = name;
+  document.getElementById("pm-desc").value = desc;
+  document.getElementById("pm-price").value = price;
+  document.getElementById("pm-stock").value = stock;
+  document.getElementById("pm-cat").value = cat;
+  document.getElementById("productModalTitle").textContent = "Edit Product";
+  document.getElementById("productModal").classList.add("open");
+}
+
+async function saveProduct() {
+  const id = document.getElementById("pm-id").value;
+  const payload = {
+    name: document.getElementById("pm-name").value,
+    description: document.getElementById("pm-desc").value,
+    price: parseFloat(document.getElementById("pm-price").value),
+    stock: parseInt(document.getElementById("pm-stock").value),
+    category: document.getElementById("pm-cat").value,
+  };
+  const url = id ? `/api/product/${id}/update` : "/api/product/add";
+  const res = await fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+  const data = await res.json();
+  if (data.success) {
+    showToast("Product saved ✓");
+    document.getElementById("productModal").classList.remove("open");
+    setTimeout(() => location.reload(), 800);
+  } else showToast("Failed to save", "error");
+}
+
+async function deleteProduct(id) {
+  if (!confirm("Delete this product?")) return;
+  const res = await fetch(`/api/product/${id}/delete`, { method:"DELETE" });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById(`prod-row-${id}`).remove();
+    showToast("Product deleted ✓");
+  }
+}
+
+// ── Toast ──
+function showToast(msg, type="") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = type === "error" ? "error" : "";
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+// ── Auto-refresh stats ──
+async function refreshStats() {
+  const res = await fetch("/api/dashboard/stats");
+  const d = await res.json();
+  document.getElementById("s-total").textContent = d.total_orders;
+  document.getElementById("s-pending").textContent = d.pending;
+  document.getElementById("s-shipped").textContent = d.shipped;
+  document.getElementById("s-delivered").textContent = d.delivered;
+  document.getElementById("s-revenue").textContent = "₹" + Number(d.revenue).toLocaleString("en-IN");
+}
+setInterval(refreshStats, 30000);
+</script>
+</body>
+</html>
